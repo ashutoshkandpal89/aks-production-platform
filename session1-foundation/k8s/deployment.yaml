@@ -1,0 +1,89 @@
+# Written to pass AKS Automatic Deployment Safeguards, and good practice on Standard too:
+#   - resource requests AND limits   - readiness + liveness probes
+#   - pinned image tag (never :latest) - non-root, no privilege escalation
+#   - topology spread across zones
+# __IMAGE__ is replaced by scripts/03-deploy-app.sh with your ACR image.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aks-demo
+  namespace: demo
+  labels:
+    app: aks-demo
+spec:
+  # replicas is managed by KEDA (see scaledobject.yaml)
+  selector:
+    matchLabels:
+      app: aks-demo
+  template:
+    metadata:
+      labels:
+        app: aks-demo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: aks-demo
+      containers:
+        - name: app
+          image: __IMAGE__
+          ports:
+            - containerPort: 8080
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            requests:
+              cpu: 250m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aks-demo
+  namespace: demo
+spec:
+  selector:
+    app: aks-demo
+  ports:
+    - port: 80
+      targetPort: 8080

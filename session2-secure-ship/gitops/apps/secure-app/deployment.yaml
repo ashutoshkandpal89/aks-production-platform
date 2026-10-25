@@ -1,0 +1,63 @@
+# Public sample image, so this folder works with no registry setup.
+# Written to pass AKS Deployment Safeguards (requests, probes, pinned tag, spread).
+# Try the drift demo: kubectl -n gitops-demo scale deployment/hello --replicas=5
+# Within a minute or two Flux sets it back to the value in this file.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: gitops-demo
+  labels:
+    app: hello
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: hello
+      containers:
+        - name: web
+          image: mcr.microsoft.com/azuredocs/aks-helloworld:v1
+          ports:
+            - containerPort: 80
+          env:
+            - name: TITLE
+              value: "Deployed by Flux from Git"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]

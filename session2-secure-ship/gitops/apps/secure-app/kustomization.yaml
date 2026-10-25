@@ -1,0 +1,10 @@
+# Flux applies everything listed here. Git is the source of truth:
+#   - change a file here and push        -> the cluster follows
+#   - change the cluster by hand         -> Flux reverts it on the next sync
+#   - delete a file here and push        -> Flux removes it from the cluster (prune: true)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml

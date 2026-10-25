@@ -1,0 +1,20 @@
+# KEDA scales the Deployment's pods. Node Auto Provisioning then adds nodes
+# when those pods do not fit on the existing ones.
+#
+# CPU trigger: utilization is measured against the container's CPU *request* (250m).
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: aks-demo
+  namespace: demo
+spec:
+  scaleTargetRef:
+    name: aks-demo
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  cooldownPeriod: 60
+  triggers:
+    - type: cpu
+      metricType: Utilization
+      metadata:
+        value: "50"

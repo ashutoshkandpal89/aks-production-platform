@@ -1,0 +1,26 @@
+# DEMO ONLY - this pod is intentionally unsafe. It should be REJECTED.
+# Everything else (requests, limits, probe, pinned tag) is fine, so the privileged container
+# is the one thing that should be flagged.
+#   AKS Automatic: denied (Deployment Safeguards enforce the Baseline Pod Security Standard)
+#   AKS Standard:  denied only after you enable safeguards (see scripts/03-safeguards-demo.sh)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-privileged
+  namespace: default
+spec:
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.9
+      securityContext:
+        privileged: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      readinessProbe:
+        tcpSocket:
+          port: 8080

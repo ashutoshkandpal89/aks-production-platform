@@ -1,0 +1,12 @@
+# The namespace is created by the setup script (cluster-level right), NOT by the pipeline.
+# The pipeline identity only gets rights INSIDE this namespace.
+#
+# Pod Security Admission: "restricted" is the strictest built-in profile.
+# This workload is written to pass it (non-root, no privilege escalation, drop ALL, seccomp).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-demo
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

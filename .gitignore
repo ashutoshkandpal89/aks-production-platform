@@ -1,0 +1,10 @@
+.state.env
+*.env
+*.log
+.DS_Store
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+# Local Bicep build output
+*.json.bak

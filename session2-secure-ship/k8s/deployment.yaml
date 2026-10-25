@@ -1,0 +1,74 @@
+# Secret reader: gets a Key Vault secret with workload identity.
+# Passes AKS Deployment Safeguards and the "restricted" Pod Security level.
+# __IMAGE__ and __KEYVAULT_URL__ are filled in by the script or the pipeline.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: secret-reader
+  namespace: secure-demo
+  labels:
+    app: secret-reader
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: secret-reader
+  template:
+    metadata:
+      labels:
+        app: secret-reader
+        azure.workload.identity/use: "true"   # tells the webhook to inject the federated token
+    spec:
+      serviceAccountName: secret-reader-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: secret-reader
+      containers:
+        - name: app
+          image: __IMAGE__
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KEY_VAULT_URL
+              value: "__KEYVAULT_URL__"
+            - name: SECRET_NAME
+              value: "demo-secret"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

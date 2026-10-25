@@ -1,0 +1,15 @@
+# Tells Azure Managed Prometheus to scrape /metrics from the app.
+# The CRD group is azmonitoring.coreos.com (not monitoring.coreos.com).
+apiVersion: azmonitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: ops-demo
+  namespace: ops-demo
+spec:
+  selector:
+    matchLabels:
+      app: ops-demo
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

@@ -1,0 +1,39 @@
+{
+  "location": "__LOCATION__",
+  "identity": { "type": "SystemAssigned" },
+  "properties": {
+    "steps": [
+      {
+        "name": "Kill one ops-demo pod",
+        "branches": [
+          {
+            "name": "pod-kill",
+            "actions": [
+              {
+                "type": "continuous",
+                "selectorId": "Selector1",
+                "duration": "PT2M",
+                "parameters": [
+                  {
+                    "key": "jsonSpec",
+                    "value": "{\"action\":\"pod-kill\",\"mode\":\"one\",\"selector\":{\"namespaces\":[\"ops-demo\"],\"labelSelectors\":{\"app\":\"ops-demo\"}}}"
+                  }
+                ],
+                "name": "urn:csci:microsoft:azureKubernetesServiceChaosMesh:podChaos/__CAP_VERSION__"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "selectors": [
+      {
+        "id": "Selector1",
+        "type": "List",
+        "targets": [
+          { "type": "ChaosTarget", "id": "__TARGET_ID__" }
+        ]
+      }
+    ]
+  }
+}

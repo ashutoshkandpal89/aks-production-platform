@@ -1,0 +1,33 @@
+# Ingress with the Kubernetes Gateway API (application routing add-on, Istio-based).
+# GatewayClass "approuting-istio" is provided by the add-on enabled in the Bicep.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: aks-demo-gateway
+  namespace: demo
+spec:
+  gatewayClassName: approuting-istio
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: aks-demo
+  namespace: demo
+spec:
+  parentRefs:
+    - name: aks-demo-gateway
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: aks-demo
+          port: 80

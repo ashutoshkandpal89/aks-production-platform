@@ -1,0 +1,25 @@
+# DEMO ONLY - this pod is intentionally unsafe. It should be REJECTED.
+# The only problem is the ":latest" tag, which Deployment Safeguards disallow (a moving
+# tag means you cannot tell what is running, or roll back to it).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bad-latest-tag
+  namespace: default
+spec:
+  containers:
+    - name: web
+      image: mcr.microsoft.com/azuredocs/aks-helloworld:latest
+      ports:
+        - containerPort: 80
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 100m
+          memory: 128Mi
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80

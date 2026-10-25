@@ -1,0 +1,35 @@
+# OPTIONAL. For clusters with Node Auto Provisioning (AKS Automatic, or Standard with NAP on).
+# Gives you a pool of Spot VMs for work that can be interrupted. Spot nodes can be evicted at any time.
+# Check the current NAP docs before use: https://learn.microsoft.com/azure/aks/node-auto-provisioning-node-pools
+apiVersion: karpenter.sh/v1
+kind: NodePool
+metadata:
+  name: spot-batch
+spec:
+  weight: 10
+  template:
+    metadata:
+      labels:
+        workload-class: spot
+    spec:
+      nodeClassRef:
+        group: karpenter.azure.com
+        kind: AKSNodeClass
+        name: default
+      # Only pods that tolerate this taint land here, so nothing important ends up on Spot by accident.
+      taints:
+        - key: workload-class
+          value: spot
+          effect: NoSchedule
+      requirements:
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot"]
+        - key: karpenter.azure.com/sku-family
+          operator: In
+          values: ["D"]
+  limits:
+    cpu: "16"
+  disruption:
+    consolidationPolicy: WhenEmptyOrUnderutilized
+    consolidateAfter: 1m

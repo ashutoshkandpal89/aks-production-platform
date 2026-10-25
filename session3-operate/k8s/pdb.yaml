@@ -1,0 +1,12 @@
+# Protects the app during voluntary disruptions: node drains, upgrades, autoscaler consolidation.
+# With 3 replicas, at most 1 pod may be down at a time.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: ops-demo
+  namespace: ops-demo
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: ops-demo

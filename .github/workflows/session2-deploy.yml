@@ -1,0 +1,80 @@
+# Session 2: build, scan and deploy to AKS with GitHub OIDC (no stored secrets).
+#
+# Run it by hand: GitHub > Actions > "Session 2 - build, scan and deploy" > Run workflow.
+# It only works after you have run session2-secure-ship/scripts/01 and 05 (they create the
+# Azure identity and set the repository VARIABLES used below).
+#
+# Why there are no secrets here:
+#   1. The job asks GitHub for a short-lived OIDC token (permission: id-token: write).
+#   2. azure/login sends that token to Entra ID.
+#   3. Entra ID checks it against the federated credential (this repo + this branch only).
+#   4. The job receives a short-lived Azure token. Nothing long-lived is stored in GitHub.
+name: Session 2 - build, scan and deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # lets the job request the OIDC token
+  contents: read
+
+env:
+  APP_DIR: session2-secure-ship/app
+  K8S_DIR: session2-secure-ship/k8s
+  NAMESPACE: secure-demo
+  IMAGE_NAME: secret-reader
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Sign in to Azure with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build the image (tagged with the commit SHA, never :latest)
+        run: |
+          IMAGE="${{ vars.ACR_NAME }}.azurecr.io/${IMAGE_NAME}:${{ github.sha }}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          docker build -t "$IMAGE" "$APP_DIR"
+
+      # Gate: fail the pipeline BEFORE the image reaches the registry.
+      # Tune severity or ignore-unfixed to match your policy.
+      - name: Scan the image for vulnerabilities (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Push the image to Azure Container Registry
+        run: |
+          az acr login --name "${{ vars.ACR_NAME }}"
+          docker push "$IMAGE"
+
+      - name: Install kubelogin
+        uses: azure/use-kubelogin@v1.2
+        with:
+          kubelogin-version: "v0.0.24"
+
+      - name: Get cluster credentials (as the pipeline identity, not as an admin)
+        uses: azure/aks-set-context@v5
+        with:
+          resource-group: ${{ vars.RESOURCE_GROUP }}
+          cluster-name: ${{ vars.CLUSTER_NAME }}
+          admin: "false"
+          use-kubelogin: "true"
+
+      - name: Deploy to the namespace
+        run: |
+          sed "s|__WI_CLIENT_ID__|${{ vars.WI_CLIENT_ID }}|g" "$K8S_DIR/serviceaccount.yaml" | kubectl apply -f -
+          sed -e "s|__IMAGE__|$IMAGE|g" -e "s|__KEYVAULT_URL__|${{ vars.KEYVAULT_URI }}|g" "$K8S_DIR/deployment.yaml" | kubectl apply -f -
+          kubectl apply -f "$K8S_DIR/service.yaml"
+          kubectl -n "$NAMESPACE" rollout status deployment/secret-reader --timeout=5m

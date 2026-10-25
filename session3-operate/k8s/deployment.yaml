@@ -1,0 +1,83 @@
+# The demo app, written for resilience: 3 replicas spread across nodes and zones,
+# probes, requests and limits, and a restricted security context.
+# __IMAGE__ is filled in by scripts/02-deploy-app.sh
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ops-demo
+  namespace: ops-demo
+  labels:
+    app: ops-demo
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: ops-demo
+  template:
+    metadata:
+      labels:
+        app: ops-demo
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: ops-demo
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: ops-demo
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: app
+          image: __IMAGE__
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "5"]   # let the load balancer stop sending traffic first
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

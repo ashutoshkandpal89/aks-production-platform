@@ -1,0 +1,20 @@
+# Optional: scale on a schedule instead of CPU (predictable traffic, e.g. business hours).
+# Use INSTEAD of scaledobject.yaml:  kubectl delete scaledobject aks-demo -n demo  first.
+# Adjust the times to your own time zone.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: aks-demo
+  namespace: demo
+spec:
+  scaleTargetRef:
+    name: aks-demo
+  minReplicaCount: 2
+  maxReplicaCount: 20
+  triggers:
+    - type: cron
+      metadata:
+        timezone: Asia/Kolkata
+        start: "0 9 * * 1-5"
+        end: "0 19 * * 1-5"
+        desiredReplicas: "10"

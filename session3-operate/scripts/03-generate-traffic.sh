@@ -8,7 +8,9 @@ DURATION="${1:-300}"
 RATE="${2:-0.02}"
 PORT_BASE=18080
 
-mapfile -t PODS < <(kubectl -n "$NAMESPACE" get pods -l app=ops-demo -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n')
+# Read the pod names into an array (a loop instead of mapfile, so it works with macOS's bash 3.2)
+PODS=()
+for name in $(kubectl -n "$NAMESPACE" get pods -l app=ops-demo -o jsonpath='{.items[*].metadata.name}'); do PODS+=("$name"); done
 [[ ${#PODS[@]} -gt 0 ]] || { echo "No ops-demo pods found. Run ./02-deploy-app.sh first." >&2; exit 1; }
 
 cleanup() { kill 0 2>/dev/null || true; }

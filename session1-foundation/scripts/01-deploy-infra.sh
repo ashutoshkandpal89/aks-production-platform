@@ -38,7 +38,7 @@ az aks get-credentials -g "$RESOURCE_GROUP" -n "$CLUSTER_NAME" --overwrite-exist
 if command -v kubelogin >/dev/null; then
   kubelogin convert-kubeconfig -l azurecli
 else
-  echo "kubelogin not found. Install it (az aks install-cli), then run: kubelogin convert-kubeconfig -l azurecli" >&2
+  echo "kubelogin not found. Install it (see "Installing kubectl and kubelogin" in the root README; on macOS: brew install kubectl Azure/kubelogin/kubelogin), then run: kubelogin convert-kubeconfig -l azurecli" >&2
 fi
 
 echo

@@ -17,7 +17,7 @@ echo "Removing role assignments, identities and Key Vault..."
 for id in "id-${AKS_PREFIX}-secret-reader" "id-${AKS_PREFIX}-github-deploy"; do
   PID="$(az identity show -g "$RESOURCE_GROUP" -n "$id" --query principalId -o tsv 2>/dev/null || true)"
   if [[ -n "$PID" ]]; then
-    az role assignment list --assignee "$PID" --all --query "[].id" -o tsv | xargs -r -n1 az role assignment delete --ids || true
+    az role assignment list --assignee "$PID" --all --query "[].id" -o tsv | while read -r RA; do [ -n "$RA" ] && az role assignment delete --ids "$RA" || true; done
     az identity delete -g "$RESOURCE_GROUP" -n "$id"
   fi
 done

@@ -12,7 +12,7 @@ echo "Tools"
 for t in az kubectl; do
   command -v "$t" >/dev/null && ok "$t found" || fail "$t not found - install it first"
 done
-command -v kubelogin >/dev/null && ok "kubelogin found" || warn "kubelogin missing (needed for Entra sign-in): az aks install-cli"
+command -v kubelogin >/dev/null && ok "kubelogin found" || warn "kubelogin missing (needed for Entra sign-in): see \"Installing kubectl and kubelogin\" in the root README"
 command -v docker >/dev/null && ok "docker found (optional; only needed if ACR Tasks is blocked)" || warn "docker not found (optional)"
 
 echo "Azure login"

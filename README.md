@@ -14,7 +14,36 @@ Each session builds on the one before it, so start with Session 1.
 
 - An Azure subscription where you can create resources and assign roles (Owner, or Contributor + User Access Administrator)
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) 2.86.0 or newer, and `kubectl` (`az aks install-cli` installs `kubectl` and `kubelogin`)
-- A bash shell (Linux, macOS, WSL, or Azure Cloud Shell)
+- A bash shell: Linux, macOS, WSL2 on Windows, or Azure Cloud Shell. The scripts are bash, so they do not run in plain PowerShell or Command Prompt.
+
+### Installing kubectl and kubelogin (one time per computer)
+
+`az aks install-cli` writes to `/usr/local/bin`, which needs admin rights and fails on a default macOS setup with
+`Operation not permitted`. Either of these works without admin rights.
+
+**Option A: install into your home folder** (Linux, macOS, WSL)
+
+```bash
+mkdir -p ~/.local/bin
+az aks install-cli --install-location ~/.local/bin/kubectl --kubelogin-install-location ~/.local/bin/kubelogin
+export PATH="$HOME/.local/bin:$PATH"                      # this terminal
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc   # every new terminal (use ~/.bashrc for bash)
+```
+
+**Option B: Homebrew** (macOS)
+
+```bash
+brew install kubectl Azure/kubelogin/kubelogin
+```
+
+Check it with `kubectl version --client` and `kubelogin --version`. After a cluster exists, connect with:
+
+```bash
+az aks get-credentials -g rg-aksprod-s1 -n <cluster-name> --overwrite-existing
+kubelogin convert-kubeconfig -l azurecli
+```
+
+Azure Cloud Shell already has both tools.
 
 ## Cost warning
 

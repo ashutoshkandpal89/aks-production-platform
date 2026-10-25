@@ -5,8 +5,8 @@ Hands-on code for the free 3-part series **"From AKS Pilot to Production Platfor
 | Session | Topic | Folder | Status |
 |---|---|---|---|
 | 1 | Building a Production-Ready AKS Foundation | [`session1-foundation`](session1-foundation) | Available |
-| 2 | Securing and Shipping on AKS | [`session2-secure-ship`](session2-secure-ship) | Coming after the session |
-| 3 | Operating AKS: Observability, Resilience and Cost | [`session3-operate`](session3-operate) | Coming after the session |
+| 2 | Securing and Shipping on AKS | [`session2-secure-ship`](session2-secure-ship) | Available |
+| 3 | Operating AKS: Observability, Resilience and Cost | [`session3-operate`](session3-operate) | Available |
 
 Each session builds on the one before it, so start with Session 1.
 

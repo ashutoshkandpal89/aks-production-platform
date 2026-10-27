@@ -19,7 +19,7 @@ param adminPrincipalId string
 param adminPrincipalType string
 
 // Key Vault Secrets Officer: lets you create the demo secret
-var secretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2d0deb36'
+var secretsOfficerRoleId = 'b86a8fe4-44ce-4948-aee5-eccb2c155cd7'
 
 resource kv 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: name
